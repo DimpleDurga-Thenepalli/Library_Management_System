@@ -1,0 +1,49 @@
+{
+  "folders": [
+    { "name": "frontend", "path": "frontend" },
+    { "name": "backend", "path": "backend" }
+  ],
+  "settings": {
+    "terminal.integrated.defaultProfile.windows": "PowerShell"
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Library: Backend and database",
+        "type": "process",
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder:backend}/start.ps1"],
+        "options": { "cwd": "${workspaceFolder:backend}" },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated", "group": "library", "clear": true },
+        "runOptions": { "instanceLimit": 1 }
+      },
+      {
+        "label": "Library: Frontend",
+        "type": "process",
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder:frontend}/start.ps1"],
+        "options": { "cwd": "${workspaceFolder:frontend}" },
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated", "group": "library", "clear": true },
+        "runOptions": { "instanceLimit": 1 }
+      },
+      {
+        "label": "Library: Start everything",
+        "dependsOn": ["Library: Backend and database", "Library: Frontend"],
+        "dependsOrder": "parallel",
+        "problemMatcher": [],
+        "group": { "kind": "build", "isDefault": true }
+      },
+      {
+        "label": "Library: Show admin login",
+        "type": "process",
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder:backend}/show-login.ps1"],
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated" }
+      }
+    ]
+  }
+}

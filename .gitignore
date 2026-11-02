@@ -1,0 +1,45 @@
+# Installed dependencies, downloaded tools and build output
+**/node_modules/
+**/.tools/
+**/target/
+**/dist/
+**/.local/
+**/.m2/
+**/coverage/
+
+# Local environment settings and credentials
+.env
+.env.*
+!.env.example
+!.env.sample
+credentials.xml
+demo.*.xml
+init-password.tmp
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+
+# Database storage and backups (keep SQL source migrations tracked)
+PostgreSQL18/
+pgdata/
+*.dump
+*.backup
+*.sql.gz
+
+# Logs, temporary files and generated preview
+*.log
+*.tmp
+*.hprof
+/frontend/preview.png
+
+# OS files and personal IDE metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+*.iml
+.classpath
+.project
+.settings/

@@ -1,0 +1,2 @@
+@media(max-width:760px){.sidebar{visibility:hidden}.sidebar.open{visibility:visible}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
