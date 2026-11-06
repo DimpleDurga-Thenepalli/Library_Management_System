@@ -9,8 +9,10 @@ pipeline {
     stages {
         stage('Environment Check') {
             steps {
-                sh 'java -version'
-                sh 'mvn -version'
+                sh '''
+                    java -version
+                    mvn -version
+                '''
             }
         }
 
@@ -21,14 +23,29 @@ pipeline {
                 }
             }
         }
+
+        stage('SonarQube Analysis') {
+            steps {
+                dir('backend') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh '''
+                            mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                              -Dsonar.projectKey=Library-Management-System \
+                              -Dsonar.projectName=Library-Management-System
+                        '''
+                    }
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'Java build and tests completed successfully!'
+            echo 'Maven build, tests and SonarQube analysis completed successfully!'
         }
+
         failure {
-            echo 'Pipeline failed. Check the Jenkins console output.'
+            echo 'Pipeline failed. Check Jenkins console output.'
         }
     }
 }
