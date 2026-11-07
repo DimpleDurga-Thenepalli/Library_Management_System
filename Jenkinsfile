@@ -39,10 +39,6 @@ pipeline {
             }
         }
 
-        
-
-
-
         stage('SonarQube Analysis') {
             steps {
                 dir('backend') {
@@ -82,47 +78,43 @@ pipeline {
                 }
             }
         }
+
+        stage('Trivy Scan') {
+            agent {
+                label 'docker-agent'
+            }
+
+            steps {
+                sh '''
+                    docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v trivy-cache:/root/.cache/ \
+                      aquasec/trivy:0.76.2 image \
+                      --severity HIGH,CRITICAL \
+                      --exit-code 1 \
+                      --timeout 15m \
+                      library-management:${BUILD_NUMBER}
+
+                    docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v trivy-cache:/root/.cache/ \
+                      aquasec/trivy:0.76.2 image \
+                      --severity HIGH,CRITICAL \
+                      --exit-code 1 \
+                      --timeout 15m \
+                      library-management-frontend:${BUILD_NUMBER}
+                '''
+            }
+        }
     }
-
-    stage('Trivy Scan') {
-    agent {
-        label 'docker-agent'
-    }
-
-    steps {
-        sh '''
-            echo "Scanning backend Docker image"
-
-            docker run --rm \
-              -v /var/run/docker.sock:/var/run/docker.sock \
-              -v trivy-cache:/root/.cache/ \
-              aquasec/trivy:0.76.2 image \
-              --severity HIGH,CRITICAL \
-              --exit-code 1 \
-              --timeout 15m \
-              library-management:${BUILD_NUMBER}
-
-            echo "Scanning frontend Docker image"
-
-            docker run --rm \
-              -v /var/run/docker.sock:/var/run/docker.sock \
-              -v trivy-cache:/root/.cache/ \
-              aquasec/trivy:0.76.2 image \
-              --severity HIGH,CRITICAL \
-              --exit-code 1 \
-              --timeout 15m \
-              library-management-frontend:${BUILD_NUMBER}
-        '''
-    }
-}
 
     post {
         success {
-            echo 'Backend and frontend builds completed successfully!'
+            echo 'Backend, frontend, SonarQube, Docker and Trivy stages passed!'
         }
 
         failure {
-            echo 'Pipeline failed. Check Jenkins console output.'
+            echo 'Pipeline failed. Check Jenkins Console Output.'
         }
     }
 }
