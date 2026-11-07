@@ -16,7 +16,7 @@ pipeline {
             }
         }
 
-        stage('Maven Build and Test') {
+        stage('Backend Build') {
             steps {
                 dir('backend') {
                     sh 'mvn clean package'
