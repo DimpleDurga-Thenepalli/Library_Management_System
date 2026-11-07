@@ -39,19 +39,27 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                dir('backend') {
-                    withSonarQubeEnv('SonarQube') {
-                        sh '''
-                            mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-                              -Dsonar.projectKey=Library-Management-System \
-                              -Dsonar.projectName=Library-Management-System
-                        '''
-                    }
-                }
+        
+stage('SonarQube Analysis') {
+    steps {
+        dir('backend') {
+            withSonarQubeEnv('SonarQube') {
+                sh '''
+                    mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                      -Dsonar.projectKey=Library-Management-System \
+                      -Dsonar.projectName=Library-Management-System \
+                      -Dsonar.projectBaseDir=.. \
+                      -Dsonar.sources=backend/src/main/java,frontend/src \
+                      -Dsonar.tests=backend/src/test/java \
+                      -Dsonar.java.binaries=backend/target/classes \
+                      -Dsonar.exclusions=**/node_modules/**,**/dist/** \
+                      -Dsonar.sourceEncoding=UTF-8
+                '''
             }
         }
+    }
+}
+
 
         stage('Backend Docker Build') {
             agent {
