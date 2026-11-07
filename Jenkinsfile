@@ -7,19 +7,26 @@ pipeline {
     }
 
     stages {
+
+        // STAGE 1: Environment Check
         stage('Environment Check') {
             steps {
                 sh '''
+                    echo "Checking Java and Maven"
                     java -version
                     mvn -version
                 '''
             }
         }
 
+        // STAGE 2: Java Backend Build and Unit Tests
         stage('Backend Build') {
             steps {
                 dir('backend') {
-                    sh 'mvn clean package'
+                    sh '''
+                        echo "Building and testing Spring Boot backend"
+                        mvn clean package
+                    '''
                 }
 
                 stash name: 'docker-context',
@@ -27,6 +34,7 @@ pipeline {
             }
         }
 
+        // STAGE 3: React Frontend Build
         stage('Frontend Build') {
             agent {
                 label 'docker-agent'
@@ -34,33 +42,31 @@ pipeline {
 
             steps {
                 dir('frontend') {
-                    sh 'docker build --target build --progress=plain .'
+                    sh '''
+                        echo "Building React frontend using Node.js and Vite"
+                        docker build --target build --progress=plain .
+                    '''
                 }
             }
         }
 
-        
-stage('SonarQube Analysis') {
-    steps {
-        dir('backend') {
-            withSonarQubeEnv('SonarQube') {
-                sh '''
-                    mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-                      -Dsonar.projectKey=Library-Management-System \
-                      -Dsonar.projectName=Library-Management-System \
-                      -Dsonar.projectBaseDir=.. \
-                      -Dsonar.sources=backend/src/main/java,frontend/src \
-                      -Dsonar.tests=backend/src/test/java \
-                      -Dsonar.java.binaries=backend/target/classes \
-                      -Dsonar.exclusions=**/node_modules/**,**/dist/** \
-                      -Dsonar.sourceEncoding=UTF-8
-                '''
+        // STAGE 4: SonarQube Analysis - Backend and Frontend
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'
+
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            echo "Analyzing Java backend and React frontend"
+                            "${scannerHome}/bin/sonar-scanner"
+                        """
+                    }
+                }
             }
         }
-    }
-}
 
-
+        // STAGE 5: Backend Docker Image
         stage('Backend Docker Build') {
             agent {
                 label 'docker-agent'
@@ -70,11 +76,15 @@ stage('SonarQube Analysis') {
                 unstash 'docker-context'
 
                 dir('backend') {
-                    sh 'docker build -t library-management:${BUILD_NUMBER} .'
+                    sh '''
+                        echo "Building backend Docker image"
+                        docker build -t library-management:${BUILD_NUMBER} .
+                    '''
                 }
             }
         }
 
+        // STAGE 6: Frontend Docker Image
         stage('Frontend Docker Build') {
             agent {
                 label 'docker-agent'
@@ -82,11 +92,15 @@ stage('SonarQube Analysis') {
 
             steps {
                 dir('frontend') {
-                    sh 'docker build -t library-management-frontend:${BUILD_NUMBER} .'
+                    sh '''
+                        echo "Building frontend Docker image"
+                        docker build -t library-management-frontend:${BUILD_NUMBER} .
+                    '''
                 }
             }
         }
 
+        // STAGE 7: Trivy Security Scanning
         stage('Trivy Scan') {
             agent {
                 label 'docker-agent'
@@ -94,6 +108,8 @@ stage('SonarQube Analysis') {
 
             steps {
                 sh '''
+                    echo "Scanning backend Docker image"
+
                     docker run --rm \
                       -v /var/run/docker.sock:/var/run/docker.sock \
                       -v trivy-cache:/root/.cache/ \
@@ -103,6 +119,10 @@ stage('SonarQube Analysis') {
                       --timeout 15m \
                       library-management:${BUILD_NUMBER}
 
+                    echo "Backend Trivy scan passed"
+
+                    echo "Scanning frontend Docker image"
+
                     docker run --rm \
                       -v /var/run/docker.sock:/var/run/docker.sock \
                       -v trivy-cache:/root/.cache/ \
@@ -111,6 +131,8 @@ stage('SonarQube Analysis') {
                       --exit-code 1 \
                       --timeout 15m \
                       library-management-frontend:${BUILD_NUMBER}
+
+                    echo "Frontend Trivy scan passed"
                 '''
             }
         }
@@ -118,11 +140,11 @@ stage('SonarQube Analysis') {
 
     post {
         success {
-            echo 'Backend, frontend, SonarQube, Docker and Trivy stages passed!'
+            echo 'SUCCESS: Backend build, frontend build, SonarQube, Docker images and Trivy scans passed!'
         }
 
         failure {
-            echo 'Pipeline failed. Check Jenkins Console Output.'
+            echo 'FAILURE: Check the first failed stage in Jenkins Console Output.'
         }
     }
 }
