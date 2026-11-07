@@ -27,6 +27,18 @@ pipeline {
             }
         }
 
+        stage('Frontend Build') {
+            agent {
+                label 'docker-agent'
+            }
+
+            steps {
+                dir('frontend') {
+                    sh 'docker build --target build --progress=plain .'
+                }
+            }
+        }
+
         stage('SonarQube Analysis') {
             steps {
                 dir('backend') {
@@ -41,7 +53,7 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Backend Docker Build') {
             agent {
                 label 'docker-agent'
             }
@@ -54,11 +66,23 @@ pipeline {
                 }
             }
         }
+
+        stage('Frontend Docker Build') {
+            agent {
+                label 'docker-agent'
+            }
+
+            steps {
+                dir('frontend') {
+                    sh 'docker build -t library-management-frontend:${BUILD_NUMBER} .'
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'Pipeline stages completed successfully!'
+            echo 'Backend and frontend builds completed successfully!'
         }
 
         failure {
