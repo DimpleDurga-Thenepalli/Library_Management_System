@@ -136,15 +136,63 @@ pipeline {
                 '''
             }
         }
-    }
 
-    post {
-        success {
-            echo 'SUCCESS: Backend build, frontend build, SonarQube, Docker images and Trivy scans passed!'
+
+        // STAGE 8: Push Backend and Frontend Images to Harbor
+        stage('Harbor Push') {
+            agent {
+                label 'docker-agent'
+            }
+
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'harbor-credentials',
+                        usernameVariable: 'HARBOR_USER',
+                        passwordVariable: 'HARBOR_PASS'
+                    )
+                ]) {
+                    sh '''
+                        set -e
+
+                        REGISTRY="host.docker.internal:8082"
+                        PROJECT="usecase1"
+
+                        echo "Logging in to Harbor"
+                        printf '%s' "$HARBOR_PASS" | docker login "$REGISTRY" \
+                          --username "$HARBOR_USER" \
+                          --password-stdin
+
+                        echo "Tagging backend image"
+                        docker tag library-management:${BUILD_NUMBER} \
+                          "$REGISTRY/$PROJECT/library-management:${BUILD_NUMBER}"
+
+                        echo "Tagging frontend image"
+                        docker tag library-management-frontend:${BUILD_NUMBER} \
+                          "$REGISTRY/$PROJECT/library-management-frontend:${BUILD_NUMBER}"
+
+                        echo "Pushing backend image to Harbor"
+                        docker push "$REGISTRY/$PROJECT/library-management:${BUILD_NUMBER}"
+
+                        echo "Pushing frontend image to Harbor"
+                        docker push "$REGISTRY/$PROJECT/library-management-frontend:${BUILD_NUMBER}"
+
+                        echo "Both Docker images pushed successfully"
+                        docker logout "$REGISTRY"
+                    '''
+                }
+            }
         }
 
-        failure {
-            echo 'FAILURE: Check the first failed stage in Jenkins Console Output.'
-        }
     }
+
+   post {
+    success {
+        echo 'Use Case 1 completed successfully.'
+    }
+
+    failure {
+        echo 'Use Case 1 failed. Check the first failed stage.'
+    }
+}
 }
