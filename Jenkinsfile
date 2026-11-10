@@ -51,16 +51,23 @@ pipeline {
         }
 
         // STAGE 4: SonarQube Analysis - Backend and Frontend
+        // FIX: Make Node.js available to SonarQube for React analysis
         stage('SonarQube Analysis') {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
 
                     withSonarQubeEnv('SonarQube') {
-                        sh """
-                            echo "Analyzing Java backend and React frontend"
-                            "${scannerHome}/bin/sonar-scanner"
-                        """
+                        nodejs(nodeJSInstallationName: 'NodeJS') {
+                            sh """
+                                echo "Checking Node.js availability"
+                                node --version
+                                npm --version
+
+                                echo "Analyzing Java backend and React frontend"
+                                "${scannerHome}/bin/sonar-scanner"
+                            """
+                        }
                     }
                 }
             }
@@ -137,7 +144,6 @@ pipeline {
             }
         }
 
-
         // STAGE 8: Push Backend and Frontend Images to Harbor
         stage('Harbor Push') {
             agent {
@@ -186,13 +192,13 @@ pipeline {
 
     }
 
-   post {
-    success {
-        echo 'Use Case 1 completed successfully.'
-    }
+    post {
+        success {
+            echo 'Use Case 1 completed successfully.'
+        }
 
-    failure {
-        echo 'Use Case 1 failed. Check the first failed stage.'
+        failure {
+            echo 'Use Case 1 failed. Check the first failed stage.'
+        }
     }
-}
 }
