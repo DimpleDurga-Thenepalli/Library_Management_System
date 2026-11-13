@@ -50,8 +50,7 @@ pipeline {
             }
         }
 
-        // STAGE 4: SonarQube Analysis - Backend and Frontend
-        // FIX: Make Node.js available to SonarQube for React analysis
+        // STAGE 4: SonarQube Analysis
         stage('SonarQube Analysis') {
             steps {
                 script {
@@ -101,7 +100,7 @@ pipeline {
                 dir('frontend') {
                     sh '''
                         echo "Building frontend Docker image"
-                        docker build -t library-management-frontend:${BUILD_NUMBER} .
+                        docker build --pull -t library-management-frontend:${BUILD_NUMBER} .
                     '''
                 }
             }
@@ -115,6 +114,8 @@ pipeline {
 
             steps {
                 sh '''
+                    set -e
+
                     echo "Scanning backend Docker image"
 
                     docker run --rm \
@@ -144,7 +145,7 @@ pipeline {
             }
         }
 
-        // STAGE 8: Push Backend and Frontend Images to Harbor
+        // STAGE 8: Push Images to Harbor
         stage('Harbor Push') {
             agent {
                 label 'docker-agent'
@@ -165,31 +166,36 @@ pipeline {
                         PROJECT="usecase1"
 
                         echo "Logging in to Harbor"
+
                         printf '%s' "$HARBOR_PASS" | docker login "$REGISTRY" \
                           --username "$HARBOR_USER" \
                           --password-stdin
 
                         echo "Tagging backend image"
+
                         docker tag library-management:${BUILD_NUMBER} \
                           "$REGISTRY/$PROJECT/library-management:${BUILD_NUMBER}"
 
                         echo "Tagging frontend image"
+
                         docker tag library-management-frontend:${BUILD_NUMBER} \
                           "$REGISTRY/$PROJECT/library-management-frontend:${BUILD_NUMBER}"
 
                         echo "Pushing backend image to Harbor"
+
                         docker push "$REGISTRY/$PROJECT/library-management:${BUILD_NUMBER}"
 
                         echo "Pushing frontend image to Harbor"
+
                         docker push "$REGISTRY/$PROJECT/library-management-frontend:${BUILD_NUMBER}"
 
                         echo "Both Docker images pushed successfully"
+
                         docker logout "$REGISTRY"
                     '''
                 }
             }
         }
-
     }
 
     post {
