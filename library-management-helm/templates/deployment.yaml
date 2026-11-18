@@ -1,0 +1,121 @@
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: {{ include "library-management-helm.fullname" . }}
+  labels:
+    {{- include "library-management-helm.labels" . | nindent 4 }}
+
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+
+  selector:
+    matchLabels:
+      {{- include "library-management-helm.selectorLabels" . | nindent 6 }}
+
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      labels:
+        {{- include "library-management-helm.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      serviceAccountName: {{ include "library-management-helm.serviceAccountName" . }}
+
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      containers:
+        - name: {{ .Chart.Name }}
+
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+          # Use the approved immutable Build #33 image.
+          # badTag is used only for rollback demonstration.
+          {{- if .Values.image.badTag }}
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.badTag | quote }}
+          {{- else }}
+          image: {{ printf "%s@%s" .Values.image.repository .Values.image.digest | quote }}
+          {{- end }}
+
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+
+          # Existing Windows PostgreSQL connection
+          env:
+            - name: DB_URL
+              value: "jdbc:postgresql://host.docker.internal:5432/library_management"
+
+            - name: DB_USERNAME
+              value: "library_app"
+
+          # Existing Kubernetes application credentials
+          envFrom:
+            - secretRef:
+                name: library-dev-app-secrets
+
+          # Render probes only when configured.
+          # The previous / probes returned HTTP 401.
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

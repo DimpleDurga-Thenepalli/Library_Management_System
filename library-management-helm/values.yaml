@@ -1,0 +1,90 @@
+
+# Default values for library-management-helm.
+# TDD DevOps Use Case 2 - Build Once, Promote, Rollback
+
+replicaCount: 1
+
+# Jenkins Build #33 - Existing Harbor image
+image:
+  repository: host.docker.internal:8082/usecase1/library-management
+  pullPolicy: IfNotPresent
+  tag: "33"
+  digest: "sha256:af36745734e2501a93e36cfef376f62668d0d055f63d5283d6d3e0efb022a4d4"
+  badTag: ""
+
+# Existing Harbor registry secret
+imagePullSecrets:
+  - name: harbor-registry-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Service account
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+# Pod configuration
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+securityContext: {}
+
+# Spring Boot backend runs on port 8080
+service:
+  type: ClusterIP
+  port: 8080
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+# HTTPRoute configuration
+httpRoute:
+  enabled: false
+  parentRefs:
+    - name: gateway
+      sectionName: http
+  hostnames:
+    - chart-example.local
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /headers
+
+# Resource settings
+resources: {}
+
+# Disable the incorrect / health probes.
+# Our Spring Security returns HTTP 401 on this endpoint.
+# A suitable authenticated-independent health check can be added later.
+livenessProbe: {}
+readinessProbe: {}
+
+# Autoscaling
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+# Additional volumes
+volumes: []
+volumeMounts: []
+
+# Kubernetes scheduling
+nodeSelector: {}
+tolerations: []
+affinity: {}
