@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: library-k8s-lab
+  labels:
+    app: library-management
+    usecase: "4"
