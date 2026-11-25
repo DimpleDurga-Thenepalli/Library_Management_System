@@ -1,0 +1,48 @@
+# TDD DevOps Use Case 5
+# Library Management System
+
+imagePullSecrets:
+  - name: harbor-registry-secret
+
+backend:
+  replicaCount: 1
+  image:
+    repository: host.docker.internal:8082/usecase1/library-management
+    tag: "33"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: host.docker.internal:8082/usecase1/library-management-frontend
+    tag: "33"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+
+database:
+  replicaCount: 1
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  name: library_management
+  username: library_app
+  service:
+    type: ClusterIP
+    port: 5432
+  persistence:
+    size: 1Gi
+
+secrets:
+  database: library-db-secret
+  admin: library-admin-secret
+
+ingress:
+  enabled: false
+  className: nginx
+  host: library-uc5.local

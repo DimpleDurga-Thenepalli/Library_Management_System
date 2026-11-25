@@ -1,0 +1,18 @@
+# TDD DevOps Use Case 5
+# DEV environment configuration
+
+backend:
+  replicaCount: 1
+
+frontend:
+  replicaCount: 1
+
+database:
+  replicaCount: 1
+  persistence:
+    size: 1Gi
+
+ingress:
+  enabled: true
+  className: nginx
+  host: library-uc5.local
